@@ -1,0 +1,691 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>데이터 과학 수행평가 · OO마트 구매 데이터</title>
+<style>
+  :root { --navy:#0f2a4a; --blue:#2563eb; --line:#cbd5e1; --bg:#f1f5f9; --card:#fff; --warn:#dc2626; --ok:#16a34a; --mut:#64748b; }
+  * { box-sizing: border-box; }
+  body { margin:0; font-family: "Malgun Gothic","맑은 고딕","Apple SD Gothic Neo",sans-serif; background:var(--bg); color:#0f172a; font-size:15px; line-height:1.6; }
+  .hidden { display:none !important; }
+  .wrap { max-width: 1040px; margin: 0 auto; padding: 16px; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:10px; padding:18px 20px; margin-bottom:14px; }
+  h1 { font-size:22px; margin:0 0 6px; color:var(--navy); }
+  h2 { font-size:18px; margin:0 0 10px; color:var(--navy); }
+  h3 { font-size:15px; margin:14px 0 6px; color:var(--navy); }
+  .btn { font:inherit; border:1px solid var(--navy); background:var(--navy); color:#fff; padding:8px 18px; border-radius:8px; cursor:pointer; }
+  .btn.sub { background:#fff; color:var(--navy); }
+  .btn.red { background:var(--warn); border-color:var(--warn); }
+  .btn:disabled { opacity:.5; cursor:default; }
+  label.f { display:block; margin:10px 0 4px; font-weight:700; }
+  input.f, select.f { font:inherit; padding:7px 10px; border:1px solid var(--line); border-radius:6px; width: 260px; }
+  .notice li { margin: 3px 0; }
+  .big { font-size: 20px; }
+  /* 상단 고정바 */
+  #topbar { position: sticky; top:0; z-index: 20; background: var(--navy); color:#fff; }
+  #topbar .in { max-width:1040px; margin:0 auto; padding:8px 16px; display:flex; align-items:center; gap:16px; flex-wrap:wrap; }
+  #timer { font-size:22px; font-weight:800; font-variant-numeric: tabular-nums; background:#fff; color:var(--navy); padding:2px 12px; border-radius:6px; min-width:96px; text-align:center; }
+  #timer.warn { background: #fee2e2; color: var(--warn); }
+  #who { font-weight:700; }
+  #tabs { display:flex; gap:6px; flex-wrap:wrap; margin-left:auto; }
+  #tabs button { font:inherit; border:1px solid #fff; background:transparent; color:#fff; padding:4px 12px; border-radius:6px; cursor:pointer; }
+  #tabs button.on { background:#fff; color:var(--navy); font-weight:700; }
+  #tabs button .cnt { font-size: 11px; opacity:.8; }
+  #warnbar { background:#fee2e2; color:var(--warn); text-align:center; font-weight:700; padding:6px; }
+  /* 문제 */
+  table.t { border-collapse: collapse; margin: 6px 0; }
+  table.t th, table.t td { border:1px solid var(--line); padding:4px 8px; text-align:center; }
+  table.t th { background:#e2e8f0; font-weight:700; }
+  table.t tr.ask td { background:#fef9c3; }
+  .scroll { overflow-x:auto; }
+  input.blank { font:inherit; width:84px; padding:3px 6px; border:2px solid #93c5fd; border-radius:5px; text-align:center; background:#f8fbff; }
+  select.blank { font:inherit; padding:3px 4px; border:2px solid #93c5fd; border-radius:5px; background:#f8fbff; max-width: 100%; }
+  input.blank.filled, select.blank.filled { border-color:#64748b; background:#fff; }
+  textarea.free { font:inherit; width:100%; min-height:70px; border:1px dashed var(--mut); border-radius:6px; padding:6px; }
+  .sent { line-height: 2.4; }
+  .echo { display:inline-block; min-width:56px; padding:0 6px; border-bottom:2px solid var(--mut); text-align:center; font-weight:700; color:#334155; }
+  .hint { color: var(--mut); font-size: 13px; }
+  .box { background:#f8fafc; border:1px solid var(--line); border-radius:8px; padding:8px 12px; margin:8px 0; }
+  .formula { font-family: "Consolas", monospace; background:#eef2ff; padding: 1px 6px; border-radius: 4px; }
+  .plots { display:flex; flex-wrap:wrap; gap:12px; }
+  .plots > div { flex: 1 1 380px; min-width: 300px; }
+  svg.plot { width:100%; height:auto; background:#fff; user-select:none; }
+  .chk { display:inline-flex; align-items:center; gap:4px; margin: 2px 10px 2px 0; padding: 2px 8px; border:1px solid var(--line); border-radius:6px; background:#fff; }
+  .pts { font-weight:700; color: var(--navy); }
+  .tag { display:inline-block; font-size:12px; padding:0 6px; border-radius:4px; background:#e2e8f0; margin-left:6px; }
+  #blanklist li a { color: var(--blue); cursor:pointer; text-decoration: underline; }
+  .modal-bg { position:fixed; inset:0; background:rgba(15,23,42,.45); z-index:50; display:flex; align-items:center; justify-content:center; }
+  .modal { background:#fff; border-radius:12px; padding:22px; max-width:440px; width:92%; }
+  .dist-list { font-size: 14px; }
+  .dist-list span { display:inline-block; margin: 2px 10px 2px 0; }
+  .ok { color: var(--ok); font-weight: 700; }
+</style>
+</head>
+<body>
+<!-- 1) 시작 화면 -->
+<div id="scr-start" class="wrap hidden">
+  <div class="card">
+    <h1>데이터 과학 수행평가 · OO마트 구매 데이터 분석</h1>
+    <div class="hint">이상치 처리 · 회귀분석 · 군집분석 · 연관분석 (4문항, 100점)</div>
+    <label class="f" for="in-cls">분반(시험지 유형)</label>
+    <select class="f" id="in-cls"></select>
+    <label class="f" for="in-sid">학번</label>
+    <input class="f" id="in-sid" autocomplete="off" placeholder="예: 20315">
+    <label class="f" for="in-name">이름</label>
+    <input class="f" id="in-name" autocomplete="off" placeholder="예: 홍길동">
+    <div id="start-err" class="hint" style="color:var(--warn)"></div>
+    <h3>안내</h3>
+    <ul class="notice">
+      <li>시험 시간은 <b>35분</b>입니다. ‘시험 시작’을 누르는 순간부터 시간이 흐릅니다.</li>
+      <li>모든 계산은 <b>손계산</b>입니다(계산기 사용 금지, 이 앱에도 계산기 기능은 없습니다). 연습장을 사용하세요.</li>
+      <li>숫자 답은 모두 <b>정확히 나누어떨어지거나 소수 둘째 자리 이내에서 끝나도록</b> 만들어져 있습니다. 반올림하지 말고 정확한 값을 쓰세요(0.5와 0.50은 같게 처리).</li>
+      <li>입력한 내용은 자동 저장됩니다. 실수로 창을 닫거나 새로고침해도 이어서 풀 수 있으며, 남은 시간도 그대로 이어집니다.</li>
+      <li>시험이 끝나면(제출 또는 시간 종료) <b>결과 파일 2개(.html, .json)가 자동으로 다운로드</b>됩니다. 다운로드 폴더에서 두 파일을 확인하고 선생님 안내에 따라 <b>USB에 복사</b>하세요.</li>
+      <li>문항 4의 ‘(3) 서술’은 문장으로 답하는 칸이며 선생님이 직접 채점합니다.</li>
+    </ul>
+    <button class="btn" id="btn-next">다음</button>
+  </div>
+  <div class="card hidden" id="other-session">
+    <b>이 PC에 다른 응시 기록이 남아 있습니다.</b>
+    <div id="other-session-msg" class="hint"></div>
+    <div style="margin-top:8px">교사 확인 후 초기화: <input class="f" id="pin0" style="width:120px" placeholder="교사 PIN"> <button class="btn sub" id="btn-reset0">초기화</button></div>
+  </div>
+</div>
+
+<!-- 2) 확인 화면 -->
+<div id="scr-confirm" class="wrap hidden">
+  <div class="card" style="text-align:center">
+    <h2>응시 정보 확인</h2>
+    <p class="big" id="confirm-text"></p>
+    <p class="hint">확인을 누르면 응시 정보는 더 이상 바꿀 수 없고, <b>바로 35분 타이머가 시작</b>됩니다.</p>
+    <button class="btn sub" id="btn-back">아니요, 수정할게요</button>
+    <button class="btn" id="btn-go">예, 맞습니다 · 시험 시작</button>
+  </div>
+</div>
+
+<!-- 3) 문제 화면 -->
+<div id="scr-exam" class="hidden">
+  <div id="topbar"><div class="in">
+    <div>남은 시간 <span id="timer">35:00</span></div>
+    <div id="who"></div>
+    <div id="tabs"></div>
+  </div><div id="warnbar" class="hidden">종료 5분 전입니다. 빈칸을 확인하세요. 시간이 끝나면 자동으로 제출됩니다.</div></div>
+  <div class="wrap" id="panels"></div>
+</div>
+
+<!-- 5) 종료 화면 -->
+<div id="scr-end" class="wrap hidden">
+  <div class="card">
+    <h1 id="end-title">시험이 종료되었습니다</h1>
+    <p id="end-who" class="big"></p>
+    <p>결과 파일 2개가 자동으로 다운로드되었습니다. 다운로드 폴더에서 아래 두 파일이 모두 있는지 확인하세요.</p>
+    <ul id="end-files"></ul>
+    <p class="hint">다운로드 표시줄에 ‘여러 파일 다운로드 허용’ 질문이 나오면 <b>허용</b>을 누르세요. 파일이 보이지 않으면 아래 버튼으로 다시 받을 수 있습니다(같은 내용이 다시 저장됩니다).</p>
+    <p>
+      <button class="btn" id="dl-both">두 파일 다시 다운로드</button>
+      <button class="btn sub" id="dl-html">결과지(.html)만 다시 받기</button>
+      <button class="btn sub" id="dl-json">답안(.json)만 다시 받기</button>
+    </p>
+    <div class="box"><b>USB 복사 안내</b>: 파일 탐색기 → ‘다운로드’ 폴더 → 위 두 파일을 선택 → USB의 ‘<b>분반 폴더</b>’에 복사 → 선생님께 확인받기. 파일 이름은 바꾸지 마세요.</div>
+    <p class="hint">입력은 잠겼습니다. 이 창을 닫아도 결과는 이 PC에 남아 있어 다시 열면 이 화면이 나옵니다.</p>
+  </div>
+  <div class="card">
+    <details><summary class="hint">교사용: 다음 응시자를 위해 초기화</summary>
+      <p class="hint">USB에 두 파일이 복사된 것을 확인한 뒤에만 초기화하세요. 초기화하면 이 PC에 저장된 응시 기록이 지워집니다.</p>
+      <input class="f" id="pin1" style="width:120px" placeholder="교사 PIN"> <button class="btn red" id="btn-reset1">초기화</button>
+    </details>
+  </div>
+</div>
+
+<div id="modal" class="modal-bg hidden"><div class="modal"><div id="modal-body"></div><p style="text-align:right;margin-bottom:0"><button class="btn sub" id="modal-no">취소</button> <button class="btn" id="modal-yes">확인</button></p></div></div>
+
+<script>
+// ===== 학생용·교사용 공통 유틸 (화면·파일 처리만 담당) =====
+var DSCommon = (function () {
+  function stableStringify(v) {
+    if (v === null || typeof v !== 'object') return JSON.stringify(v);
+    if (Array.isArray(v)) return '[' + v.map(stableStringify).join(',') + ']';
+    var keys = Object.keys(v).filter(function (k) { return v[k] !== undefined; }).sort();
+    return '{' + keys.map(function (k) { return JSON.stringify(k) + ':' + stableStringify(v[k]); }).join(',') + '}';
+  }
+  // cyrb53 변형: 64비트(16진 16자리) 해시. 단순 변조 확인용이며 보안용 서명이 아님.
+  function hash64(str) {
+    var h1 = 0xdeadbeef ^ 0, h2 = 0x41c6ce57 ^ 0;
+    for (var i = 0; i < str.length; i++) {
+      var ch = str.charCodeAt(i);
+      h1 = Math.imul(h1 ^ ch, 2654435761);
+      h2 = Math.imul(h2 ^ ch, 1597334677);
+    }
+    h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507) ^ Math.imul(h2 ^ (h2 >>> 13), 3266489909);
+    h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507) ^ Math.imul(h1 ^ (h1 >>> 13), 3266489909);
+    return ((h2 >>> 0).toString(16).padStart(8, '0') + (h1 >>> 0).toString(16).padStart(8, '0'));
+  }
+  // 체크값 대상: check 필드를 뺀 결과 객체 전체
+  function checkValue(salt, record) {
+    var copy = {};
+    Object.keys(record).forEach(function (k) { if (k !== 'check') copy[k] = record[k]; });
+    return hash64(salt + '|' + stableStringify(copy));
+  }
+  function esc(s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+  }
+  function safeName(s) {
+    return String(s || '').trim().replace(/[\\/:*?"<>|\x00-\x1f]/g, '_').replace(/\s+/g, '_').slice(0, 40) || '이름없음';
+  }
+  function fileBase(cls, sid, name) {
+    return cls + '형_' + safeName(sid) + '_' + safeName(name);
+  }
+  function fmtTime(ms) {
+    if (!ms) return '';
+    var d = new Date(ms);
+    function p(n) { return String(n).padStart(2, '0'); }
+    return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate()) + ' ' + p(d.getHours()) + ':' + p(d.getMinutes()) + ':' + p(d.getSeconds());
+  }
+  function dist1(p, q) {
+    return (Math.round(Math.hypot(p[0] - q[0], p[1] - q[1]) * 10) / 10).toFixed(1);
+  }
+  var CLUSTER_COLORS = ['#2563eb', '#ea580c', '#16a34a'];
+  // 산점도/군집 그림 공통 SVG
+  function scatterSVG(o) {
+    // o: {pts:[[x,y]], xr:[min,max], yr:[min,max], xl, yl, line:{a,b}, labels:[], colors:[], target:idx, w,h, xstep, ystep, onclick}
+    var W = o.w || 420, H = o.h || 300, L = 46, R = 14, T = 14, B = 40;
+    var pw = W - L - R, ph = H - T - B;
+    function sx(x) { return L + (x - o.xr[0]) / (o.xr[1] - o.xr[0]) * pw; }
+    function sy(y) { return T + ph - (y - o.yr[0]) / (o.yr[1] - o.yr[0]) * ph; }
+    var s = '<svg viewBox="0 0 ' + W + ' ' + H + '" class="plot" xmlns="http://www.w3.org/2000/svg" style="max-width:' + W + 'px">';
+    s += '<rect x="' + L + '" y="' + T + '" width="' + pw + '" height="' + ph + '" fill="#fff" stroke="#94a3b8"/>';
+    var xs = o.xstep || 5, ys = o.ystep || 10;
+    for (var gx = Math.ceil(o.xr[0] / xs) * xs; gx <= o.xr[1]; gx += xs) {
+      s += '<line x1="' + sx(gx) + '" x2="' + sx(gx) + '" y1="' + T + '" y2="' + (T + ph) + '" stroke="#e2e8f0"/>';
+      s += '<text x="' + sx(gx) + '" y="' + (T + ph + 15) + '" font-size="11" text-anchor="middle" fill="#475569">' + gx + '</text>';
+    }
+    for (var gy = Math.ceil(o.yr[0] / ys) * ys; gy <= o.yr[1]; gy += ys) {
+      s += '<line x1="' + L + '" x2="' + (L + pw) + '" y1="' + sy(gy) + '" y2="' + sy(gy) + '" stroke="#e2e8f0"/>';
+      s += '<text x="' + (L - 6) + '" y="' + (sy(gy) + 4) + '" font-size="11" text-anchor="end" fill="#475569">' + gy + '</text>';
+    }
+    s += '<text x="' + (L + pw / 2) + '" y="' + (H - 6) + '" font-size="12" text-anchor="middle" fill="#0f172a">' + esc(o.xl) + '</text>';
+    s += '<text x="12" y="' + (T + ph / 2) + '" font-size="12" text-anchor="middle" fill="#0f172a" transform="rotate(-90 12 ' + (T + ph / 2) + ')">' + esc(o.yl) + '</text>';
+    if (o.line) {
+      var x0 = o.xr[0], x1 = o.xr[1];
+      s += '<line x1="' + sx(x0) + '" y1="' + sy(o.line.a * x0 + o.line.b) + '" x2="' + sx(x1) + '" y2="' + sy(o.line.a * x1 + o.line.b) + '" stroke="#dc2626" stroke-width="2" clip-path="none"/>';
+    }
+    if (o.extra) s += o.extra(sx, sy);
+    o.pts.forEach(function (p, i) {
+      var c = o.colors ? o.colors[i] : '#2563eb';
+      var tgt = o.target === i;
+      s += '<g class="pt" data-i="' + i + '" style="cursor:' + (o.clickable ? 'pointer' : 'default') + '">';
+      if (tgt) s += '<circle cx="' + sx(p[0]) + '" cy="' + sy(p[1]) + '" r="11" fill="none" stroke="#0f172a" stroke-width="2" stroke-dasharray="3 2"/>';
+      s += '<circle cx="' + sx(p[0]) + '" cy="' + sy(p[1]) + '" r="' + (o.labels ? 6.5 : 4.5) + '" fill="' + c + '" stroke="#fff" stroke-width="1.5"/>';
+      if (o.labels) s += '<text x="' + (sx(p[0]) + 8) + '" y="' + (sy(p[1]) - 8) + '" font-size="12" font-weight="700" fill="#0f172a">' + esc(o.labels[i]) + '</text>';
+      s += '</g>';
+    });
+    s += '</svg>';
+    return s;
+  }
+  return { stableStringify: stableStringify, hash64: hash64, checkValue: checkValue, esc: esc, safeName: safeName,
+    fileBase: fileBase, fmtTime: fmtTime, dist1: dist1, scatterSVG: scatterSVG, CLUSTER_COLORS: CLUSTER_COLORS };
+})();
+if (typeof module !== 'undefined') module.exports = DSCommon;
+
+</script>
+<script>
+(function () {
+  'use strict';
+  var PAYLOAD = {"A": "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", "B": "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", "C": "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"};
+  var CFG = {"examMinutes": 35, "warnMinutes": 5, "resetPin": "2026", "checkSalt": "OO마트-DS-2026", "examId": "DS2026-ASSESS-01", "xorKey": "OOmart-ds", "classes": "ABC"};
+  var C = DSCommon, esc = C.esc;
+  var KEY = 'dsexam_state::' + CFG.examId;
+  var DURATION = CFG.examMinutes * 60 * 1000;
+  var WARN = CFG.warnMinutes * 60 * 1000;
+  var state, D = null, timerId = null;
+
+  // ---------- 저장 ----------
+  function blankState() { return { v: 1, examId: CFG.examId, phase: 'start', cls: '', sid: '', name: '', answers: {}, events: [], tab: 'q1' }; }
+  function load() {
+    try { var s = JSON.parse(localStorage.getItem(KEY) || 'null'); if (s && s.examId === CFG.examId) return s; } catch (e) {}
+    return blankState();
+  }
+  function save() { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) { console.error(e); } }
+  function ev(type, extra) { var e = { t: Date.now(), type: type }; if (extra) e.info = extra; state.events.push(e); }
+  function $(id) { return document.getElementById(id); }
+  function show(id) { ['scr-start', 'scr-confirm', 'scr-exam', 'scr-end'].forEach(function (s) { $(s).classList.toggle('hidden', s !== id); }); window.scrollTo(0, 0); }
+
+  // ---------- 데이터 해독(시작 후 해당 분반만) ----------
+  function decode(cls) {
+    var bin = atob(PAYLOAD[cls]);
+    var key = CFG.xorKey, bytes = new Uint8Array(bin.length);
+    for (var i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i) ^ key.charCodeAt(i % key.length);
+    return JSON.parse(new TextDecoder('utf-8').decode(bytes));
+  }
+
+  // ---------- 모달 ----------
+  function confirmBox(html, yesText, cb) {
+    $('modal-body').innerHTML = html; $('modal-yes').textContent = yesText || '확인';
+    $('modal').classList.remove('hidden');
+    $('modal-yes').onclick = function () { $('modal').classList.add('hidden'); cb(); };
+    $('modal-no').onclick = function () { $('modal').classList.add('hidden'); };
+  }
+
+  // ---------- 시작 ----------
+  function initStart() {
+    var sel = $('in-cls');
+    var classes = CFG.classes.split('');
+    sel.innerHTML = (classes.length > 1 ? '<option value="">분반 선택</option>' : '') +
+      classes.map(function (c) { return '<option value="' + c + '">' + c + '형</option>'; }).join('');
+    if (classes.length === 1) { sel.value = classes[0]; sel.disabled = true; }
+    if (state.cls && classes.indexOf(state.cls) >= 0) sel.value = state.cls;
+    $('in-sid').value = state.sid || ''; $('in-name').value = state.name || '';
+    $('btn-next').onclick = function () {
+      var cls = sel.value, sid = $('in-sid').value.trim(), name = $('in-name').value.trim();
+      if (!cls) return ($('start-err').textContent = '분반을 선택하세요.');
+      if (!sid) return ($('start-err').textContent = '학번을 입력하세요.');
+      if (!name) return ($('start-err').textContent = '이름을 입력하세요.');
+      $('start-err').textContent = '';
+      state.cls = cls; state.sid = sid; state.name = name; save();
+      $('confirm-text').innerHTML = '분반 <b>' + esc(cls) + '형</b> / 학번 <b>' + esc(sid) + '</b> / 이름 <b>' + esc(name) + '</b><br>맞습니까?';
+      show('scr-confirm');
+    };
+    $('btn-back').onclick = function () { show('scr-start'); };
+    $('btn-go').onclick = function () {
+      if (state.phase !== 'start') return;
+      state.phase = 'exam'; state.startedAt = Date.now(); state.answers = {}; ev('start');
+      save(); enterExam();
+    };
+    $('btn-reset0').onclick = function () { doReset($('pin0').value); };
+  }
+  function doReset(pin) {
+    if (pin !== CFG.resetPin) { alert('PIN이 맞지 않습니다.'); return; }
+    localStorage.removeItem(KEY); location.reload();
+  }
+
+  // ---------- 입력 컨트롤 ----------
+  function inp(key, w) { return '<input class="blank" data-key="' + key + '" inputmode="decimal" autocomplete="off" spellcheck="false"' + (w ? ' style="width:' + w + 'px"' : '') + '>'; }
+  function sel(key, opts, ph) {
+    return '<select class="blank" data-key="' + key + '"><option value="">' + (ph || '선택') + '</option>' +
+      opts.map(function (o) { return '<option value="' + esc(o) + '">' + esc(o) + '</option>'; }).join('') + '</select>';
+  }
+  function echo(key) { return '<span class="echo" data-echo="' + key + '">?</span>'; }
+
+  // 필수 빈칸 목록(빈칸 점검용)
+  function blankList() {
+    var L = [];
+    L.push(['q1', 'q1.iqr', 'IQR'], ['q1', 'q1.lo', '하한 울타리'], ['q1', 'q1.hi', '상한 울타리'], ['q1', 'q1.out', '이상치 지목']);
+    D.q2.ask.forEach(function (r) {
+      var nm = D.q2.rows[r].id;
+      L.push(['q2', 'q2.m1.yhat.' + r, nm + ' 모델1 ŷ'], ['q2', 'q2.m1.e2.' + r, nm + ' 모델1 오차²'],
+        ['q2', 'q2.m2.yhat.' + r, nm + ' 모델2 ŷ'], ['q2', 'q2.m2.e2.' + r, nm + ' 모델2 오차²']);
+    });
+    L.push(['q2', 'q2.mse1', '모델1 MSE'], ['q2', 'q2.mse2', '모델2 MSE'], ['q2', 'q2.cmp', 'MSE가 더 (작은/큰)'],
+      ['q2', 'q2.cmpModel', '해당 모델'], ['q2', 'q2.best', '더 적합한 모델'], ['q2', 'q2.bonus', '데이터 10개 해석']);
+    ['k2', 'k3'].forEach(function (k) {
+      var kk = k === 'k2' ? 'k=2' : 'k=3';
+      L.push(['q3', 'q3.' + k + '.a', kk + ' a'], ['q3', 'q3.' + k + '.b', kk + ' b'], ['q3', 'q3.' + k + '.s', kk + ' s']);
+    });
+    L.push(['q3', 'q3.bestK', '더 적절한 k'], ['q3', 'q3.near', 's가 (1/0/−1)'], ['q3', 'q3.bChange', 'b값 변화'],
+      ['q3', 'q3.single', '한 점의 s로 k 결정'], ['q3', 'q3.reason', '이유']);
+    L.push(['q4', 'q4.base', '기준 상품'], ['q4', 'q4.set1', '세트 ①'], ['q4', 'q4.set2', '세트 ②'], ['q4', 'q4.lift1', '세트 ① 향상도'],
+      ['q4', 'q4.lift2', '세트 ② 향상도'], ['q4', 'q4.essay', '(3) 서술']);
+    return L;
+  }
+  function isEmpty(v) { return v == null || (Array.isArray(v) ? v.length === 0 : String(v).trim() === ''); }
+
+  // ---------- 문항 화면 ----------
+  function renderQ1() {
+    var q = D.q1;
+    var h = '<div class="card" id="p-q1"><h2>문항 1. 이상치 처리 <span class="tag">20점</span></h2>';
+    h += '<p>OO마트 고객 10명의 <b>1회 결제금액(단위: 천원)</b>입니다(정렬되지 않음).</p><div class="scroll"><table class="t"><tr><th>고객</th>' +
+      q.values.map(function (_, i) { return '<th>' + (i + 1) + '</th>'; }).join('') + '</tr><tr><th>결제금액</th>' +
+      q.values.map(function (v) { return '<td>' + v + '</td>'; }).join('') + '</tr></table></div>';
+    h += '<div class="box">10개 값을 오름차순으로 정렬한 뒤 <b>하위 5개의 중앙값</b>을 Q1, <b>상위 5개의 중앙값</b>을 Q3로 정한다(즉 Q1 = 3번째 값, Q3 = 8번째 값).<br>' +
+      '<b>Q1 = ' + q.q1 + '</b>, &nbsp;<b>Q3 = ' + q.q3 + '</b><br>' +
+      '다만 하한/상한 값의 기준은 <b>IQR의 1.5배</b>로 한다.</div>';
+    h += '<h3>(1) 계산 <span class="hint">숫자 12점</span></h3><p class="sent">IQR = ' + inp('q1.iqr') + ' &nbsp; 하한 울타리 = ' + inp('q1.lo') + ' &nbsp; 상한 울타리 = ' + inp('q1.hi') + '</p>';
+    h += '<h3>(2) 이상치 지목 <span class="hint">해당하는 값을 모두 고르시오</span></h3><div>' +
+      q.values.map(function (v, i) { return '<label class="chk"><input type="checkbox" data-key="q1.out" data-idx="' + i + '"> 고객' + (i + 1) + ': ' + v + '</label>'; }).join('') + '</div>';
+    h += '</div>';
+    return h;
+  }
+
+  function renderQ2() {
+    var q = D.q2;
+    var x1s = q.rows.map(function (r) { return r.x1; }), x2s = q.rows.map(function (r) { return r.x2; }), ys = q.rows.map(function (r) { return r.y; });
+    var ymax = Math.ceil((Math.max.apply(null, ys) + 10) / 20) * 20;
+    var h = '<div class="card" id="p-q2"><h2>문항 2. 회귀분석 <span class="tag">25점</span></h2>';
+    h += '<p>고객 10명의 <b>구매금액 y(천원)</b>를 예측하는 두 단순회귀 모델이 있습니다. 회귀식의 계수는 모두 정수이므로 ŷ와 오차도 모두 정수입니다.</p>';
+    h += '<div class="plots"><div><b>모델 1</b>: <span class="formula">ŷ = ' + q.m1.a + 'x + ' + q.m1.b + '</span> (x = 체류시간, 분)' +
+      C.scatterSVG({ pts: q.rows.map(function (r) { return [r.x1, r.y]; }), xr: [0, Math.ceil((Math.max.apply(null, x1s) + 3) / 5) * 5], yr: [0, ymax], xl: '체류시간(분)', yl: '구매금액(천원)', line: q.m1, xstep: 5, ystep: 20 }) +
+      '</div><div><b>모델 2</b>: <span class="formula">ŷ = ' + q.m2.a + 'x + ' + q.m2.b + '</span> (x = 구매 품목 수, 개)' +
+      C.scatterSVG({ pts: q.rows.map(function (r) { return [r.x2, r.y]; }), xr: [0, Math.max.apply(null, x2s) + 2], yr: [0, ymax], xl: '구매 품목 수(개)', yl: '구매금액(천원)', line: q.m2, xstep: 2, ystep: 20 }) + '</div></div>';
+    h += '<p><b>두 모델을 활용하여 MSE를 구하기 위한 아래 표를 완성하시오.</b></p>';
+    h += '<div class="scroll"><table class="t"><tr><th rowspan="2">고객</th><th rowspan="2">체류시간<br>x₁(분)</th><th rowspan="2">품목 수<br>x₂(개)</th><th rowspan="2">구매금액<br>y(천원)</th><th colspan="3">모델 1</th><th colspan="3">모델 2</th></tr>' +
+      '<tr><th>ŷ</th><th>오차</th><th>오차²</th><th>ŷ</th><th>오차</th><th>오차²</th></tr>';
+    q.rows.forEach(function (r, i) {
+      var ask = q.ask.indexOf(i) >= 0;
+      h += '<tr' + (ask ? ' class="ask"' : '') + '><td>' + r.id + '</td><td>' + r.x1 + '</td><td>' + r.x2 + '</td><td>' + r.y + '</td>';
+      ['m1', 'm2'].forEach(function (m) {
+        if (ask) h += '<td>' + inp('q2.' + m + '.yhat.' + i, 64) + '</td><td class="hint">(연습장)</td><td>' + inp('q2.' + m + '.e2.' + i, 64) + '</td>';
+        else { var p = q.pre[m][i]; h += '<td>' + p.yhat + '</td><td>' + p.err + '</td><td>' + p.e2 + '</td>'; }
+      });
+      h += '</tr>';
+    });
+    h += '<tr><th colspan="4">미리 계산된 7행의 오차² 합</th><th colspan="3">' + q.preSum.m1 + '</th><th colspan="3">' + q.preSum.m2 + '</th></tr></table></div>';
+    h += '<p class="sent">모델 1의 MSE = ' + inp('q2.mse1') + ' &nbsp; 모델 2의 MSE = ' + inp('q2.mse2') + ' <span class="hint">(10행 전체, 소수 첫째 자리까지 정확히 끝남)</span></p>';
+    h += '<h3>판단</h3><p class="sent">MSE가 더 ' + sel('q2.cmp', ['작은', '큰']) + ' 모델은 ' + sel('q2.cmpModel', ['모델 1', '모델 2']) + '이므로 ' +
+      sel('q2.best', ['모델 1', '모델 2']) + '가 더 적합하다.</p>';
+    h += '<p class="sent">데이터가 10개뿐이므로 ' + sel('q2.bonus', q.bonus) + '.</p>';
+    h += '</div>';
+    return h;
+  }
+
+  var q3Sel = null;
+  function q3Plot(kkey) {
+    var q = D.q3, labs = q[kkey];
+    var tIdx = Number(q.target.slice(1)) - 1;
+    return C.scatterSVG({
+      pts: q.points, xr: [-2, 26], yr: [-2, 26], xstep: 4, ystep: 4, w: 420, h: 400,
+      xl: '방문 점수(월 방문횟수 변환)', yl: '구매 점수(회당 구매액 변환)',
+      labels: q.points.map(function (_, i) { return 'P' + (i + 1); }),
+      colors: labs.map(function (l) { return C.CLUSTER_COLORS[l]; }), target: tIdx, clickable: true,
+      extra: function (sx, sy) {
+        if (q3Sel == null) return '';
+        var s = '', p = q.points[q3Sel];
+        q.points.forEach(function (o, j) {
+          if (j === q3Sel) return;
+          s += '<line x1="' + sx(p[0]) + '" y1="' + sy(p[1]) + '" x2="' + sx(o[0]) + '" y2="' + sy(o[1]) + '" stroke="#94a3b8" stroke-dasharray="4 3"/>';
+          var mx = sx(p[0]) + (sx(o[0]) - sx(p[0])) * 0.62, my = sy(p[1]) + (sy(o[1]) - sy(p[1])) * 0.62 + 4;
+          s += '<text x="' + mx + '" y="' + my + '" font-size="11" fill="#7c2d12" font-weight="700" text-anchor="middle" paint-order="stroke" stroke="#fff" stroke-width="3">' + C.dist1(p, o) + '</text>';
+        });
+        return s;
+      }
+    });
+  }
+  function q3Legend(kkey) {
+    var q = D.q3, groups = {};
+    q[kkey].forEach(function (l, i) { (groups[l] = groups[l] || []).push('P' + (i + 1)); });
+    return Object.keys(groups).sort().map(function (l) {
+      return '<span style="color:' + C.CLUSTER_COLORS[l] + ';font-weight:700">● 군집 ' + (Number(l) + 1) + '</span>: ' + groups[l].join(', ');
+    }).join(' &nbsp; ');
+  }
+  function q3Refresh() {
+    var el2 = $('q3-plot-k2'), el3 = $('q3-plot-k3');
+    if (!el2) return;
+    el2.innerHTML = q3Plot('k2'); el3.innerHTML = q3Plot('k3');
+    var q = D.q3, box = $('q3-dist');
+    if (q3Sel == null) box.innerHTML = '<span class="hint">그림에서 점을 클릭하면 그 점에서 나머지 7개 점까지의 거리가 표시됩니다(소수 첫째 자리).</span>';
+    else {
+      var p = q.points[q3Sel];
+      box.innerHTML = '<b>P' + (q3Sel + 1) + '</b>에서의 거리: ' + q.points.map(function (o, j) {
+        return j === q3Sel ? '' : '<span>P' + (j + 1) + ': <b>' + C.dist1(p, o) + '</b></span>';
+      }).join('');
+    }
+    [el2, el3].forEach(function (el) {
+      el.querySelectorAll('g.pt').forEach(function (g) {
+        g.addEventListener('click', function () { q3Sel = Number(g.getAttribute('data-i')); q3Refresh(); });
+      });
+    });
+  }
+  function renderQ3() {
+    var q = D.q3, T = q.target;
+    var h = '<div class="card" id="p-q3"><h2>문항 3. 군집분석 <span class="tag">30점</span></h2>';
+    h += '<p>고객 8명(P1~P8)의 <b>월 방문횟수</b>와 <b>회당 구매액</b>을 비슷한 척도의 점수(0~24)로 변환해 나타냈습니다. 같은 데이터를 k=2, k=3으로 군집화한 결과가 색으로 표시되어 있습니다. 점선 원으로 표시된 <b>' + T + '</b>의 실루엣 값을 구하시오.</p>';
+    h += '<div class="plots"><div><b>k = 2</b><div id="q3-plot-k2"></div><div class="hint">' + q3Legend('k2') + '</div></div>' +
+      '<div><b>k = 3</b><div id="q3-plot-k3"></div><div class="hint">' + q3Legend('k3') + '</div></div></div>';
+    h += '<div class="box dist-list" id="q3-dist"></div>';
+    h += '<div class="box"><span class="formula">a = 같은 군집의 다른 점들까지 거리의 평균</span><br><span class="formula">b = 다른 군집 각각에 대해 그 군집 점들까지 거리의 평균을 구한 뒤, 그중 가장 작은 값</span><br>' +
+      '<span class="formula">s = (b − a) ÷ max(a, b)</span> &nbsp; 모든 값은 소수 둘째 자리 이내에서 정확히 끝납니다(반올림하지 말 것).</div>';
+    h += '<h3>(1) ' + T + '의 a, b, s <span class="hint">숫자 16점</span></h3><table class="t"><tr><th></th><th>a</th><th>b</th><th>s</th></tr>' +
+      '<tr><th>k = 2</th><td>' + inp('q3.k2.a') + '</td><td>' + inp('q3.k2.b') + '</td><td>' + inp('q3.k2.s') + '</td></tr>' +
+      '<tr><th>k = 3</th><td>' + inp('q3.k3.a') + '</td><td>' + inp('q3.k3.b') + '</td><td>' + inp('q3.k3.s') + '</td></tr></table>';
+    h += '<h3>(2) 해석</h3>';
+    h += '<p class="sent">① s는 k=2일 때 ' + echo('q3.k2.s') + ', k=3일 때 ' + echo('q3.k3.s') + '이므로 이 점에서는 k = ' + sel('q3.bestK', ['2', '3']) + '가 더 적절하다. <span class="hint">(s 값은 위 표에서 자동으로 옮겨집니다)</span></p>';
+    h += '<p class="sent">② s가 ' + sel('q3.near', ['1', '0', '−1']) + '에 가까울수록 군집이 잘 분리된 것이다.</p>';
+    h += '<p class="sent">③ k=2에서 k=3으로 바꾸면 ' + T + '의 b값은 ' + sel('q3.bChange', ['커진다', '작아진다']) + '.</p>';
+    h += '<p class="sent">④ 한 점의 s만으로 k를 정하는 것은 ' + sel('q3.single', ['적절하다', '적절하지 않다']) + '. 왜냐하면 ' + sel('q3.reason', q.reasons) + '.</p>';
+    h += '</div>';
+    return h;
+  }
+
+  function renderQ4() {
+    var q = D.q4;
+    var h = '<div class="card" id="p-q4"><h2>문항 4. 연관분석 <span class="tag">25점</span></h2>';
+    h += '<p>OO마트 영수증 10건과 상품 7종의 구매 기록입니다.</p><div class="scroll"><table class="t"><tr><th>영수증</th><th style="text-align:left">구매 상품</th></tr>' +
+      q.receipts.map(function (r, i) { return '<tr><td>' + (i + 1) + '</td><td style="text-align:left">' + r.map(esc).join(', ') + '</td></tr>'; }).join('') + '</table></div>';
+    h += '<h3>(1) 기준 상품 선택</h3><p class="sent">기준 상품: ' + sel('q4.base', q.base, '기준 상품 선택') + ' <span class="hint">선택하면 아래에 표가 나타납니다.</span></p><div id="q4-table"></div>';
+    h += '<div class="box"><span class="formula">지지도(A,B) = A와 B를 함께 산 영수증 수 ÷ 10</span> &nbsp; <span class="formula">신뢰도(A→B) = 함께 산 수 ÷ A를 산 수</span><br>' +
+      '<span class="formula">향상도(A→B) = 신뢰도(A→B) ÷ B의 지지도</span> &nbsp; 향상도는 표에 없으므로 직접 계산하시오(소수 둘째 자리 이내에서 끝남).</div>';
+    h += '<h3>(2) 세트 선택 · 향상도 계산 <span class="hint">표에서 신뢰도가 가장 높은 두 상품을 각각 세트로 고르시오</span></h3>';
+    h += '<p class="sent">세트 ①: [기준 상품] + ' + sel('q4.set1', q.products) + ' &nbsp; 향상도 = ' + inp('q4.lift1') + '</p>';
+    h += '<p class="sent">세트 ②: [기준 상품] + ' + sel('q4.set2', q.products) + ' &nbsp; 향상도 = ' + inp('q4.lift2') + '</p>';
+    h += '<h3>(3) 서술 <span class="hint">12점 · 선생님 채점</span></h3><p>두 세트의 <b>신뢰도</b>와 <b>향상도</b>를 비교하여, 어느 세트를 우선 추천할지 근거를 들어 서술하시오.</p>' +
+      '<textarea class="free" style="min-height:120px" data-key="q4.essay" placeholder="예: 세트 ○의 신뢰도는 …이지만 향상도가 …이므로 …"></textarea>';
+    h += '</div>';
+    return h;
+  }
+  function q4Table() {
+    var base = state.answers['q4.base'], el = $('q4-table');
+    if (!el) return;
+    if (!base) { el.innerHTML = ''; return; }
+    var t = D.q4.tables[base];
+    el.innerHTML = '<p><b>' + esc(base) + '</b> 구매 영수증 수: ' + t.count + '건 (지지도 ' + t.sup + ')</p><div class="scroll"><table class="t"><tr><th>상대 상품 B</th><th>함께 구매 건수</th><th>지지도(' + esc(base) + ',B)</th><th>신뢰도(' + esc(base) + '→B)</th><th>B의 지지도</th></tr>' +
+      t.rows.map(function (r) { return '<tr><td>' + esc(r.item) + '</td><td>' + r.co + '</td><td>' + r.sup + '</td><td>' + r.conf + '</td><td>' + r.supY + '</td></tr>'; }).join('') + '</table></div>';
+  }
+
+  function renderCheck() {
+    return '<div class="card" id="p-check"><h2>제출 점검</h2><p>아래는 아직 비어 있는 칸입니다. 빈칸이 있어도 제출은 가능합니다. 항목을 누르면 해당 문항으로 이동합니다.</p>' +
+      '<ul id="blanklist"></ul><p><button class="btn red" id="btn-submit">제출하고 시험 종료</button></p><p class="hint">시간이 끝나면 자동으로 제출되고 파일이 다운로드됩니다.</p></div>';
+  }
+
+  // ---------- 바인딩 ----------
+  function bindAll() {
+    var A = state.answers;
+    document.querySelectorAll('#panels [data-key]').forEach(function (el) {
+      var k = el.getAttribute('data-key');
+      if (el.type === 'checkbox') {
+        var arr = A[k] || [];
+        el.checked = arr.indexOf(Number(el.getAttribute('data-idx'))) >= 0;
+        el.addEventListener('change', function () {
+          var cur = (state.answers[k] || []).filter(function (x) { return x !== Number(el.getAttribute('data-idx')); });
+          if (el.checked) cur.push(Number(el.getAttribute('data-idx')));
+          cur.sort(function (a, b) { return a - b; });
+          state.answers[k] = cur; onChange(k);
+        });
+      } else {
+        if (A[k] != null) el.value = A[k];
+        var h = function () { state.answers[k] = el.value; markFilled(el); onChange(k); };
+        el.addEventListener('input', h); el.addEventListener('change', h);
+        markFilled(el);
+      }
+    });
+  }
+  function markFilled(el) { if (el.classList.contains('blank')) el.classList.toggle('filled', String(el.value).trim() !== ''); }
+  function onChange(k) {
+    save();
+    if (k === 'q4.base') q4Table();
+    refreshEchoes(); refreshCounts();
+  }
+  function refreshEchoes() {
+    document.querySelectorAll('[data-echo]').forEach(function (el) {
+      var v = state.answers[el.getAttribute('data-echo')];
+      el.textContent = isEmpty(v) ? '?' : v;
+    });
+  }
+  function refreshCounts() {
+    var L = blankList(), cnt = { q1: 0, q2: 0, q3: 0, q4: 0 };
+    L.forEach(function (b) { if (isEmpty(state.answers[b[1]])) cnt[b[0]]++; });
+    ['q1', 'q2', 'q3', 'q4'].forEach(function (q) {
+      var b = document.querySelector('#tabs [data-tab="' + q + '"] .cnt');
+      if (b) b.textContent = cnt[q] ? ' (빈칸 ' + cnt[q] + ')' : ' ✓';
+    });
+    var ul = $('blanklist');
+    if (ul) {
+      var empty = L.filter(function (b) { return isEmpty(state.answers[b[1]]); });
+      var names = { q1: '문항 1', q2: '문항 2', q3: '문항 3', q4: '문항 4' };
+      ul.innerHTML = empty.length ? empty.map(function (b) { return '<li><a data-go="' + b[0] + '">' + names[b[0]] + ' · ' + esc(b[2]) + '</a></li>'; }).join('')
+        : '<li class="ok">빈칸이 없습니다.</li>';
+      ul.querySelectorAll('[data-go]').forEach(function (a) { a.onclick = function () { setTab(a.getAttribute('data-go')); }; });
+    }
+  }
+  function setTab(t) {
+    state.tab = t; save();
+    ['q1', 'q2', 'q3', 'q4', 'check'].forEach(function (x) {
+      var p = $('p-' + x); if (p) p.classList.toggle('hidden', x !== t);
+      var b = document.querySelector('#tabs [data-tab="' + x + '"]'); if (b) b.classList.toggle('on', x === t);
+    });
+    window.scrollTo(0, 0);
+  }
+
+  // ---------- 시험 진행 ----------
+  function enterExam() {
+    D = decode(state.cls);
+    $('who').textContent = state.cls + '형 · ' + state.sid + ' · ' + state.name;
+    $('tabs').innerHTML = [['q1', '문항 1'], ['q2', '문항 2'], ['q3', '문항 3'], ['q4', '문항 4'], ['check', '제출 점검']].map(function (t) {
+      return '<button data-tab="' + t[0] + '">' + t[1] + (t[0] !== 'check' ? '<span class="cnt"></span>' : '') + '</button>';
+    }).join('');
+    $('tabs').querySelectorAll('button').forEach(function (b) { b.onclick = function () { setTab(b.getAttribute('data-tab')); }; });
+    $('panels').innerHTML = renderQ1() + renderQ2() + renderQ3() + renderQ4() + renderCheck();
+    bindAll(); q3Refresh(); q4Table(); refreshEchoes(); refreshCounts();
+    $('btn-submit').onclick = function () {
+      var n = blankList().filter(function (b) { return isEmpty(state.answers[b[1]]); }).length;
+      confirmBox('<h2>제출하시겠습니까?</h2><p>' + (n ? '<b style="color:var(--warn)">빈칸이 ' + n + '개 있습니다.</b> ' : '') +
+        '제출하면 더 이상 답을 고칠 수 없고, 결과 파일 2개가 다운로드됩니다.</p>', '제출', function () { finish('submit'); });
+    };
+    setTab(state.tab || 'q1');
+    show('scr-exam');
+    tick(); timerId = setInterval(tick, 500);
+  }
+  function tick() {
+    if (state.phase !== 'exam') return;
+    var left = state.startedAt + DURATION - Date.now();
+    if (left <= 0) { $('timer').textContent = '00:00'; finish('timeout'); return; }
+    var s = Math.ceil(left / 1000), mm = Math.floor(s / 60), ss = s % 60;
+    $('timer').textContent = String(mm).padStart(2, '0') + ':' + String(ss).padStart(2, '0');
+    var warn = left <= WARN;
+    $('timer').classList.toggle('warn', warn);
+    $('warnbar').classList.toggle('hidden', !warn);
+    if (warn && !state.warned) { state.warned = true; ev('warn5'); save(); }
+  }
+
+  // ---------- 종료·파일 ----------
+  function finish(reason) {
+    if (state.phase !== 'exam') return;
+    if (timerId) clearInterval(timerId);
+    document.activeElement && document.activeElement.blur && document.activeElement.blur();
+    state.phase = 'end'; state.endedAt = Date.now(); state.endReason = reason;
+    ev(reason === 'timeout' ? 'timeout' : 'submit');
+    if (!D) D = decode(state.cls);
+    var rec = {
+      format: 'ds-exam-answer', version: 1, examId: CFG.examId, cls: state.cls, sid: state.sid, name: state.name,
+      startedAt: state.startedAt, endedAt: state.endedAt, endReason: reason,
+      durationSec: Math.round((state.endedAt - state.startedAt) / 1000),
+      answers: state.answers, data: D, events: state.events, userAgent: navigator.userAgent
+    };
+    rec.check = C.checkValue(CFG.checkSalt, rec);
+    state.files = { base: C.fileBase(state.cls, state.sid, state.name), json: JSON.stringify(rec, null, 1), html: resultHTML(rec) };
+    save();
+    showEnd(true);
+  }
+  function download(name, text, mime) {
+    var blob = new Blob([text], { type: mime + ';charset=utf-8' });
+    var url = URL.createObjectURL(blob), a = document.createElement('a');
+    a.href = url; a.download = name; a.style.display = 'none';
+    document.body.appendChild(a); a.click();
+    setTimeout(function () { URL.revokeObjectURL(url); a.remove(); }, 60000);
+  }
+  function dlHTML() { download(state.files.base + '.html', state.files.html, 'text/html'); }
+  function dlJSON() { download(state.files.base + '.json', state.files.json, 'application/json'); }
+  function dlBoth() { dlHTML(); setTimeout(dlJSON, 700); }
+  function showEnd(auto) {
+    show('scr-end');
+    $('end-title').textContent = state.endReason === 'timeout' ? '시간이 끝나 자동 제출되었습니다' : '제출이 완료되었습니다';
+    $('end-who').textContent = state.cls + '형 · 학번 ' + state.sid + ' · ' + state.name;
+    $('end-files').innerHTML = '<li><b>' + esc(state.files.base) + '.html</b> (결과지)</li><li><b>' + esc(state.files.base) + '.json</b> (답안 원본)</li>';
+    $('dl-both').onclick = dlBoth; $('dl-html').onclick = dlHTML; $('dl-json').onclick = dlJSON;
+    $('btn-reset1').onclick = function () { doReset($('pin1').value); };
+    if (auto) setTimeout(dlBoth, 300);
+  }
+
+  // ---------- 결과지 HTML(자체 완결) ----------
+  function resultHTML(rec) {
+    var A = rec.answers, d = rec.data;
+    function v(k) { var x = A[k]; return isEmpty(x) ? '<span class="em">(빈칸)</span>' : '<span class="ans">' + esc(x) + '</span>'; }
+    function score(label, parts) {
+      return '<table class="sc"><tr>' + parts.map(function (p) { return '<td>' + p[0] + ' <span class="sb"></span> / ' + p[1] + '</td>'; }).join('') +
+        '<td><b>' + label + ' 소계</b> <span class="sb"></span> / ' + parts.reduce(function (s, p) { return s + p[1]; }, 0) + '</td></tr></table>';
+    }
+    var h = '<!DOCTYPE html><html lang="ko"><head><meta charset="UTF-8"><title>' + esc(rec.cls + '형_' + rec.sid + '_' + rec.name) + ' 결과지</title><style>' +
+      'body{font-family:"Malgun Gothic",sans-serif;margin:24px;color:#111;font-size:14px;line-height:1.55}h1{font-size:20px;margin:0 0 8px}h2{font-size:16px;border-bottom:2px solid #0f2a4a;padding-bottom:2px;margin-top:22px}' +
+      'table{border-collapse:collapse;margin:6px 0}td,th{border:1px solid #999;padding:3px 7px;text-align:center}th{background:#eee}.ans{font-weight:700;color:#0b3d91;background:#eef4ff;padding:0 4px;border:1px solid #9bb7e6;border-radius:3px}' +
+      '.em{color:#b91c1c;font-weight:700}.free{border:1px dashed #888;padding:6px 10px;margin:8px 0;background:#fafafa}.sc td{text-align:left;padding:6px 10px}.sb{display:inline-block;width:46px;border-bottom:1px solid #000}' +
+      '.ask td{background:#fff7cc}.meta td{text-align:left}@media print{body{margin:10mm}h2{break-after:avoid}}</style></head><body>';
+    h += '<h1>데이터 과학 수행평가 결과지 · OO마트 구매 데이터</h1><table class="meta"><tr><th>분반</th><td>' + esc(rec.cls) + '형</td><th>학번</th><td>' + esc(rec.sid) + '</td><th>이름</th><td>' + esc(rec.name) + '</td></tr>' +
+      '<tr><th>시작</th><td>' + C.fmtTime(rec.startedAt) + '</td><th>종료</th><td>' + C.fmtTime(rec.endedAt) + '</td><th>종료 방식</th><td>' + (rec.endReason === 'timeout' ? '시간 종료 자동 제출' : '직접 제출') + '</td></tr>' +
+      '<tr><th>체크값</th><td colspan="5" style="font-family:monospace">' + rec.check + '</td></tr></table>';
+    // 문항 1
+    var q = d.q1;
+    h += '<h2>문항 1. 이상치 처리 (20점)</h2><table><tr><th>고객</th>' + q.values.map(function (_, i) { return '<th>' + (i + 1) + '</th>'; }).join('') + '</tr><tr><th>결제금액(천원)</th>' + q.values.map(function (x) { return '<td>' + x + '</td>'; }).join('') + '</tr></table>' +
+      '<p>제시: Q1 = ' + q.q1 + ', Q3 = ' + q.q3 + '</p><p>IQR = ' + v('q1.iqr') + ', 하한 울타리 = ' + v('q1.lo') + ', 상한 울타리 = ' + v('q1.hi') + '</p>' +
+      '<p>이상치 지목: ' + (isEmpty(A['q1.out']) ? '<span class="em">(빈칸)</span>' : A['q1.out'].map(function (i) { return '<span class="ans">고객' + (i + 1) + ': ' + q.values[i] + '</span>'; }).join(' ')) + '</p>' +
+      score('문항 1', [['숫자', 12], ['이상치 지목', 8]]);
+    // 문항 2
+    q = d.q2;
+    h += '<h2>문항 2. 회귀분석 (25점)</h2><p>모델 1: ŷ = ' + q.m1.a + 'x + ' + q.m1.b + ' (x = 체류시간) &nbsp; 모델 2: ŷ = ' + q.m2.a + 'x + ' + q.m2.b + ' (x = 품목 수)</p>' +
+      '<table><tr><th>고객</th><th>x₁</th><th>x₂</th><th>y</th><th>모델1 ŷ</th><th>모델1 오차²</th><th>모델2 ŷ</th><th>모델2 오차²</th></tr>' +
+      q.rows.map(function (r, i) {
+        var ask = q.ask.indexOf(i) >= 0;
+        return '<tr' + (ask ? ' class="ask"' : '') + '><td>' + r.id + '</td><td>' + r.x1 + '</td><td>' + r.x2 + '</td><td>' + r.y + '</td>' + ['m1', 'm2'].map(function (m) {
+          return ask ? '<td>' + v('q2.' + m + '.yhat.' + i) + '</td><td>' + v('q2.' + m + '.e2.' + i) + '</td>' : '<td>' + q.pre[m][i].yhat + '</td><td>' + q.pre[m][i].e2 + '</td>';
+        }).join('') + '</tr>';
+      }).join('') + '<tr><th colspan="4">제시 7행 오차² 합</th><td colspan="2">' + q.preSum.m1 + '</td><td colspan="2">' + q.preSum.m2 + '</td></tr></table>' +
+      '<p>MSE: 모델 1 = ' + v('q2.mse1') + ', 모델 2 = ' + v('q2.mse2') + '</p><p>MSE가 더 ' + v('q2.cmp') + ' 모델은 ' + v('q2.cmpModel') + '이므로 ' + v('q2.best') + '가 더 적합하다.</p>' +
+      '<p>데이터가 10개뿐이므로 ' + v('q2.bonus') + '.</p>' + score('문항 2', [['숫자', 15], ['선택·논리', 10]]);
+    // 문항 3
+    q = d.q3;
+    var ti = Number(q.target.slice(1)) - 1;
+    h += '<h2>문항 3. 군집분석 (30점)</h2><p>지정 점: <b>' + q.target + '</b></p><table><tr><th>점</th>' + q.points.map(function (_, i) { return '<th>P' + (i + 1) + '</th>'; }).join('') + '</tr>' +
+      '<tr><th>좌표</th>' + q.points.map(function (p) { return '<td>(' + p[0] + ', ' + p[1] + ')</td>'; }).join('') + '</tr>' +
+      '<tr><th>k=2 군집</th>' + q.k2.map(function (l) { return '<td>' + (l + 1) + '</td>'; }).join('') + '</tr>' +
+      '<tr><th>k=3 군집</th>' + q.k3.map(function (l) { return '<td>' + (l + 1) + '</td>'; }).join('') + '</tr>' +
+      '<tr><th>' + q.target + '까지 거리</th>' + q.points.map(function (p, i) { return '<td>' + (i === ti ? '—' : C.dist1(q.points[ti], p)) + '</td>'; }).join('') + '</tr></table>' +
+      '<table><tr><th></th><th>a</th><th>b</th><th>s</th></tr><tr><th>k=2</th><td>' + v('q3.k2.a') + '</td><td>' + v('q3.k2.b') + '</td><td>' + v('q3.k2.s') + '</td></tr>' +
+      '<tr><th>k=3</th><td>' + v('q3.k3.a') + '</td><td>' + v('q3.k3.b') + '</td><td>' + v('q3.k3.s') + '</td></tr></table>' +
+      '<p>① 이 점에서는 k = ' + v('q3.bestK') + '가 더 적절하다.</p><p>② s가 ' + v('q3.near') + '에 가까울수록 군집이 잘 분리된 것이다.</p><p>③ k=2→3에서 b값은 ' + v('q3.bChange') + '.</p>' +
+      '<p>④ 한 점의 s만으로 k를 정하는 것은 ' + v('q3.single') + '. 왜냐하면 ' + v('q3.reason') + '.</p>' + score('문항 3', [['숫자', 16], ['선택·논리', 14]]);
+    // 문항 4
+    q = d.q4;
+    h += '<h2>문항 4. 연관분석 (25점)</h2><table><tr><th>영수증</th><th>구매 상품</th></tr>' + q.receipts.map(function (r, i) { return '<tr><td>' + (i + 1) + '</td><td style="text-align:left">' + r.map(esc).join(', ') + '</td></tr>'; }).join('') + '</table>';
+    var base = A['q4.base'];
+    if (base && q.tables[base]) {
+      var t = q.tables[base];
+      h += '<p>기준 상품: ' + v('q4.base') + ' (구매 ' + t.count + '건, 지지도 ' + t.sup + ')</p><table><tr><th>상대 상품 B</th><th>함께 구매</th><th>지지도</th><th>신뢰도</th><th>B의 지지도</th></tr>' +
+        t.rows.map(function (r) { return '<tr><td>' + esc(r.item) + '</td><td>' + r.co + '</td><td>' + r.sup + '</td><td>' + r.conf + '</td><td>' + r.supY + '</td></tr>'; }).join('') + '</table>';
+    } else h += '<p>기준 상품: ' + v('q4.base') + '</p>';
+    h += '<p>세트 ①: ' + v('q4.set1') + ', 향상도 = ' + v('q4.lift1') + ' &nbsp; 세트 ②: ' + v('q4.set2') + ', 향상도 = ' + v('q4.lift2') + '</p>' +
+      '<div class="free"><b>(3) 서술 (12점)</b><br>' + (isEmpty(A['q4.essay']) ? '<span class="em">(빈칸)</span>' : esc(A['q4.essay']).replace(/\n/g, '<br>')) + '</div>' +
+      score('문항 4', [['숫자', 10], ['세트 선택·서술', 15]]);
+    h += '<h2>총점</h2><table class="sc"><tr><td>문항 1 <span class="sb"></span>/20</td><td>문항 2 <span class="sb"></span>/25</td><td>문항 3 <span class="sb"></span>/30</td><td>문항 4 <span class="sb"></span>/25</td><td><b>총점</b> <span class="sb"></span>/100</td><td>채점 교사 서명 <span class="sb" style="width:90px"></span></td></tr></table>';
+    h += '</body></html>';
+    return h;
+  }
+
+  // ---------- 진입 ----------
+  state = load();
+  var classes = CFG.classes.split('');
+  if (state.phase !== 'start' && classes.indexOf(state.cls) < 0) {
+    initStart(); show('scr-start');
+    $('other-session').classList.remove('hidden');
+    $('other-session-msg').textContent = state.cls + '형 응시 기록(' + state.sid + ' ' + state.name + ')이 진행 중이거나 종료된 상태입니다. 해당 분반 파일(또는 통합 파일)을 열어 이어서 진행하거나, 파일을 회수한 뒤 교사가 초기화하세요.';
+    $('btn-next').disabled = true;
+  } else if (state.phase === 'exam') {
+    ev('resume'); save(); enterExam();
+  } else if (state.phase === 'end') {
+    showEnd(false);
+  } else {
+    initStart(); show('scr-start');
+  }
+})();
+</script>
+</body>
+</html>
